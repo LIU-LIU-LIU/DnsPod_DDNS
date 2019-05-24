@@ -1,0 +1,155 @@
+#!/bin/bash
+#
+#请将此脚本加入到crontab定时任务中，如果你想一分钟检测一次应该这样写道：
+#命令后面的>>管道是为了生成回显日志
+#*/1 * * * * /bin/bash ./run  >> ./Survice.log
+#注意上方./为相对路径，请添加定时任务时更改为绝对路径!
+###############################################################################
+######必填配置：
+config=''
+#要使用的功能
+#0为只检测当前域名是否和本机外网IP解析条目相同，否则邮件通知用户自行更改。
+#1为自动检测域名解析，更改到本机外网IP，并邮寄通知。
+#2获取账户下的域名信息，包括域名列表，主机记录列表。
+Domain=''
+#用作检测的域名
+Sender=''
+#发件方账号名
+Password=''
+#发件方密码
+smtp=''
+#发件人服务器发件地址
+To=''
+#收件人邮箱地址
+##########功能1必填配置:(如果不知道请将config设置为2再运行此文件获取账户信息)
+login_token=''
+#API Token，获取方法https://support.dnspod.cn/Kb/showarticle/tsid/227/
+domain_id=''
+#用作修改记录的域名ID
+record_id=''
+#用作修改记录的记录ID
+sub_domain=''
+#用作修改记录的主机记录, 如 www
+record_type='A'
+#记录类型，大写英文，如：A
+record_line_id='0'
+#线路的ID，如0
+value='LocalIP'
+#记录值, 如 IP:200.200.200.200, CNAME: cname.dnspod.com., MX: mail.dnspod.com。可使用字符LocalIP代替本机外网IP。
+###############################################################################
+
+main(){
+LocalIP=`curl -s https://api.ip.la`
+#`curl https://www.ipip.net/ip/ | grep '<input type="text" name="ip" value=' | awk 'BEGIN{FS="\""} NR<3{print $6}'`
+#获取本机外网IP
+IPAddress=`nslookup $Domain | grep "Address: " | awk 'BEGIN{FS=": "} NR=2{print $2}'`
+#获取域名解析结果
+echo -e " Domain=$Domain \n LocalIP=$LocalIP \n IPAddress=$IPAddress"
+if [ "$LocalIP" == "$IPAddress" ];then
+	Math=true
+	echo -e "检测结果匹配，退出程序。\n}"
+	exit 0
+else
+        Match=false
+        echo -e "解析结果不匹配，进入程序。"
+fi
+}
+#主程序结束
+
+send(){
+if [ -f "./Express.txt" ];then
+        echo -e "已经发送过邮件，退出程序。\n}"
+else
+	if [ -z "$Sender" -o -z "$Password" -o -z "$smtp" -o -z "$To" ]; then
+		echo -e "\033[47;31m 参数\"Sender,Password,smtp,To\"未配置请编辑此文件配置完后,再运行  \033[0m"
+	        echo -e "\033[47;31m 配置错误，已经退出 \033[0m \n}"
+		exit 1
+	else
+		 /usr/local/bin/sendemail -f $Sender -t $To -s $smtp -u $Theme -o message-content-type=html -o message-charset=utf8 -xu $Sender -xp $Password -m $Content
+	        echo -e "Express=true" > ./Express.txt
+	        echo -e "邮件提醒发送完毕 \n"
+	fi
+fi
+}
+#邮件发送函数结束
+
+config0(){
+if [ $Match ];then
+	Theme="你的域名($Domain)解析发生变动，请注意~"
+	#邮件标题
+	Content="当前域名:$Domain <br/>解析结果为:$IPAddress <br/>当前服务器IP地址为:$LocalIP <br/><hr><p><font color="red">系统检测到不匹配，特发送此邮件通知。</font><br/></p></script><a href="https://console.cloud.tencent.com/domain/mydomain"><font color="blue">点击此处跳转到腾讯云</font></a><br/>"
+	#邮件内容
+	send
+	echo -e "}"
+	exit 0
+else
+	rm  -f ./Express.txt
+	echo -e " 检测结果匹配，退出程序。\n}"
+	exit 0
+fi
+}
+#功能0函数结束
+
+config1(){
+if [ -z "$login_token" -o -z "$domain_id" -o -z "$record_id" -o -z "$sub_domain" -o -z "$record_type" -o -z "$record_line_id" -o -z "$value" ]; then
+	echo -e "\033[47;31m 请先编辑此文件配置好后，再运行  \033[0m"
+        echo -e "\033[47;31m 配置错误，已经退出 \033[0m \n}"
+	exit 1
+else
+	if [ $Match ];then
+		if [ "$value" == "LocalIP" ]; then value="$LocalIP" ; fi
+		Theme="域名($Domain)解析发生变动，已经帮你更正好了~"
+		#邮件标题
+	        Content="当前域名:$Domain <br/>解析结果为:$IPAddress <br/>当前服务器器IP地址为:$LocalIP <br/><hr><p><font color="red">系统检测到不匹配，已经自动帮你修改好了，请稍后检验。<br/>如果失败请手动点击下面链接，进行更改。</font><br></p></script><a href="https://console.cloud.tencent.com/domain/mydomain"><font color="blue">点击此处跳转到腾讯云</font></a><br/>"
+	        #邮件内容
+	        send
+		curl -X POST https://dnsapi.cn/Record.Modify -d "login_token=$login_token&format=xml&domain_id=$domain_id&record_id=$record_id&sub_domain=$sub_domain&record_type=$record_type&record_line_id=$record_line_id&value=$value"
+		#修改主机记录
+		echo -e "以上如果出现\"Action completed successful\"则表示成功，如出现\"* invalid\"则表示失败，请查看错误并修改相应配置！\n请求API完毕\n}"
+		exit 0
+	else
+	        rm  -f ./Express.txt
+	        echo -e "检测结果匹配，退出程序。\n}"
+	        exit 0
+	fi
+fi
+}
+#功能1函数结束
+
+config2(){
+if [ -z "$login_token" ]; then
+        echo -e "\033[47;31m 请先编辑此文件配置好后，再运行  \033[0m"
+        echo -e "\033[47;31m 配置错误，已经退出 \033[0m \n}"
+	exit 1
+else
+	curl -X POST https://dnsapi.cn/Domain.List -d "login_token="$login_token"&format=xml"
+#获取域名列表
+	echo -e "\033[47;34m |以上是此账户下的域名信息，以下是域名下的记录信息。|\n|请将获取到的域名ID填入配置文件中以获取记录信息|  \033[0m"
+	curl -X POST https://dnsapi.cn/Record.List -d "login_token="$login_token"&format=xml&domain_id="$domain_id""
+#获取主机记录列表
+	echo -e "以上如果出现\"Action completed successful\"则表示成功，如出现\"* invalid\"则表示失败，请查看错误并修改相应配置！\n请求API完毕\n}"
+	exit 0
+fi
+}
+#功能2函数结束
+
+date
+echo -e "{"
+if [ -z "$config" -o -z "$Domain" ]; then
+        echo -e "\033[47;31m 请先编辑此文件配置好后，再运行  \033[0m"
+        echo -e "\033[47;31m 配置错误，已经退出 \033[0m \n}"
+        exit 1
+else
+        main
+        case $config in
+        0)      config0
+        ;;
+        1)      config1
+        ;;
+        2)      config2
+        ;;
+        *)      echo -e "\033[47;31m \"config\"配置不正确，请提供正确的参数(0/1/2)  \033[0m"
+                echo -e "\033[47;31m 配置错误，已经退出 \033[0m \n}"
+                exit 1
+        esac
+fi
