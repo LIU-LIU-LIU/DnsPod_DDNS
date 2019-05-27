@@ -68,7 +68,7 @@ else
 	        echo -e "\033[47;31m 配置错误，已经退出 \033[0m \n}"
 		exit 1
 	else
-		 /usr/local/bin/sendemail -f $Sender -t $To -s $smtp -u $Theme -o message-content-type=html -o message-charset=utf8 -xu $Sender -xp $Password -m $Content
+		 /usr/local/bin/sendemail -f $Sender -t $To -s $smtp -u $Theme -o message-content-type=html -o message-charset=utf-8 -xu $Sender -xp $Password -m $Content
 	        echo -e "Express=true" > ./Express.txt
 	        echo -e "邮件提醒发送完毕 \n"
 	fi
