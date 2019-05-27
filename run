@@ -39,7 +39,8 @@ value='LocalIP'
 ###############################################################################
 
 main(){
-LocalIP=`curl -s https://api.ip.la`
+LocalIP=`curl -s http://www.taobao.com/help/getip.php | awk 'BEGIN{FS="\""} NR<2{print $2}'`
+#`curl -s https://api.ip.la`
 #`curl https://www.ipip.net/ip/ | grep '<input type="text" name="ip" value=' | awk 'BEGIN{FS="\""} NR<3{print $6}'`
 #获取本机外网IP
 IPAddress=`nslookup $Domain | grep "Address: " | awk 'BEGIN{FS=": "} NR=2{print $2}'`
