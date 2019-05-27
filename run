@@ -30,9 +30,9 @@ record_id=''
 #用作修改记录的记录ID
 sub_domain=''
 #用作修改记录的主机记录, 如 www
-record_type='A'
+record_type=''
 #记录类型，大写英文，如：A
-record_line_id='0'
+record_line_id=''
 #线路的ID，如0
 value='LocalIP'
 #记录值, 如 IP:200.200.200.200, CNAME: cname.dnspod.com., MX: mail.dnspod.com。可使用字符LocalIP代替本机外网IP。
@@ -48,6 +48,7 @@ IPAddress=`nslookup $Domain | grep "Address: " | awk 'BEGIN{FS=": "} NR=2{print 
 echo -e " Domain=$Domain \n LocalIP=$LocalIP \n IPAddress=$IPAddress"
 if [ "$LocalIP" == "$IPAddress" ];then
 	Math=true
+	rm  -f ./Express.txt
 	echo -e "检测结果匹配，退出程序。\n}"
 	exit 0
 else
@@ -60,6 +61,7 @@ fi
 send(){
 if [ -f "./Express.txt" ];then
         echo -e "已经发送过邮件，退出程序。\n}"
+	exit 0
 else
 	if [ -z "$Sender" -o -z "$Password" -o -z "$smtp" -o -z "$To" ]; then
 		echo -e "\033[47;31m 参数\"Sender,Password,smtp,To\"未配置请编辑此文件配置完后,再运行  \033[0m"
@@ -83,10 +85,6 @@ if [ $Match ];then
 	send
 	echo -e "}"
 	exit 0
-else
-	rm  -f ./Express.txt
-	echo -e " 检测结果匹配，退出程序。\n}"
-	exit 0
 fi
 }
 #功能0函数结束
@@ -106,12 +104,8 @@ else
 	        send
 		curl -X POST https://dnsapi.cn/Record.Modify -d "login_token=$login_token&format=xml&domain_id=$domain_id&record_id=$record_id&sub_domain=$sub_domain&record_type=$record_type&record_line_id=$record_line_id&value=$value"
 		#修改主机记录
-		echo -e "以上如果出现\"Action completed successful\"则表示成功，如出现\"* invalid\"则表示失败，请查看错误并修改相应配置！\n请求API完毕\n}"
+		echo -e "以上如果出现\"Action completed successful\"则表示成功，如出现\"* invalid\"或者\"* failed\"则表示失败，请查看错误并修改相应配置！\n请求API完毕\n}"
 		exit 0
-	else
-	        rm  -f ./Express.txt
-	        echo -e "检测结果匹配，退出程序。\n}"
-	        exit 0
 	fi
 fi
 }
@@ -128,7 +122,7 @@ else
 	echo -e "\033[47;34m |以上是此账户下的域名信息，以下是域名下的记录信息。|\n|请将获取到的域名ID填入配置文件中以获取记录信息|  \033[0m"
 	curl -X POST https://dnsapi.cn/Record.List -d "login_token="$login_token"&format=xml&domain_id="$domain_id""
 #获取主机记录列表
-	echo -e "以上如果出现\"Action completed successful\"则表示成功，如出现\"* invalid\"则表示失败，请查看错误并修改相应配置！\n请求API完毕\n}"
+	echo -e "以上如果出现\"Action completed successful\"则表示成功，如出现\"* invalid\"或者\"* failed\"则表示失败，请查看错误并修改相应配置！\n请求API完毕\n}"
 	exit 0
 fi
 }
