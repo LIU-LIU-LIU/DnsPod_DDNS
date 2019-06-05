@@ -43,6 +43,8 @@ LocalIP=`curl -s http://www.taobao.com/help/getip.php | awk 'BEGIN{FS="\""} NR<2
 #`curl -s https://api.ip.la`
 #`curl https://www.ipip.net/ip/ | grep '<input type="text" name="ip" value=' | awk 'BEGIN{FS="\""} NR<3{print $6}'`
 #获取本机外网IP
+if [ `echo $LocalIP | awk -F"." '{if(NF==4 && $1<255 && $2<255 && $3<255 && $4<255) print 0}'` ];then echo "获取外网IP：yes" ; else echo -e "获取外网IP异常，已经退出\n}" ;exit 0; fi
+#判断获取IP是否合规
 IPAddress=`nslookup $Domain | grep "Address: " | awk 'BEGIN{FS=": "} NR=2{print $2}'`
 #获取域名解析结果
 echo -e " Domain=$Domain \n LocalIP=$LocalIP \n IPAddress=$IPAddress"
@@ -68,7 +70,7 @@ else
 	        echo -e "\033[47;31m 配置错误，已经退出 \033[0m \n}"
 		exit 1
 	else
-		 /usr/local/bin/sendemail -f $Sender -t $To -s $smtp -u $Theme -o message-content-type=html -o message-charset=utf-8 -xu $Sender -xp $Password -m $Content
+		 /usr/local/bin/sendemail -f $Sender -t $To -s $smtp -u $Theme -o message-content-type=html -o message-charset=utf-8 -xu $Sender -xp $Password -m $Content -o tls=no
 	        echo -e "Express=true" > ./Express.txt
 	        echo -e "邮件提醒发送完毕 \n"
 	fi
