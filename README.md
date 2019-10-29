@@ -22,5 +22,5 @@ tar -zxvf sendEmail-v1.56.tar.gz<br>
 cd sendEmail-v1.56<br>
 进入sendEmail目录<br>
 <br>
-ln -s sendEmail /usr/local/bin/sendemail<br>
+ln -s `pwd`/sendEmail /usr/local/bin/sendemail<br>
 创建软连接<br>
