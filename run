@@ -39,11 +39,33 @@ value='LocalIP'
 ###############################################################################
 
 main(){
-LocalIP=`curl -s http://www.taobao.com/help/getip.php | awk 'BEGIN{FS="\""} NR<2{print $2}'`
+LocalIP=`curl -s http://ip.360.cn/IPShare/info | awk -F"\"" '{print $12}'`
+if [ `echo $LocalIP | awk -F"." '{if(NF==4 && $1<255 && $2<255 && $3<255 && $4<255) print 0}'` ]
+then
+        echo "获取外网IP成功" 
+else
+        echo -e "获取外网IP异常，正在尝试下一种方案\n"
+        LocalIP=`curl -s https://api.ip.la`
+        if [ `echo $LocalIP | awk -F"." '{if(NF==4 && $1<255 && $2<255 && $3<255 && $4<255) print 0}'` ]
+        then
+                echo "获取外网IP成功"
+        else
+                echo -e "获取外网IP异常，正在尝试下一种方案\n"
+                LocalIP=`curl -s https://www.ipip.net/ip/ | grep '<input type="text" name="ip" value=' | awk 'BEGIN{FS="\""} NR<3{print $6}'`
+                if [ `echo $LocalIP | awk -F"." '{if(NF==4 && $1<255 && $2<255 && $3<255 && $4<255) print 0}'` ]
+                then
+                        echo "获取外网IP成功"
+                else
+                        echo -e "获取外网IP异常，已经退出\n}"
+                        exit 0
+                fi
+        fi
+fi
+#LocalIP=`curl -s http://www.taobao.com/help/getip.php | awk 'BEGIN{FS="\""} NR<2{print $2}'`
 #`curl -s https://api.ip.la`
 #`curl https://www.ipip.net/ip/ | grep '<input type="text" name="ip" value=' | awk 'BEGIN{FS="\""} NR<3{print $6}'`
 #获取本机外网IP
-if [ `echo $LocalIP | awk -F"." '{if(NF==4 && $1<255 && $2<255 && $3<255 && $4<255) print 0}'` ];then echo "获取外网IP：yes" ; else echo -e "获取外网IP异常，已经退出\n}" ;exit 0; fi
+#if [ `echo $LocalIP | awk -F"." '{if(NF==4 && $1<255 && $2<255 && $3<255 && $4<255) print 0}'` ];then echo "获取外网IP：yes" ; else echo -e "获取外网IP异常，已经退出\n}" ;exit 0; fi
 #判断获取IP是否合规
 IPAddress=`nslookup $Domain | grep "Address: " | awk 'BEGIN{FS=": "} NR=2{print $2}'`
 #获取域名解析结果
