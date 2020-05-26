@@ -1,0 +1,16 @@
+#!/bin/bash
+checking(){
+	if [ `echo $* | awk -F"." '{if(NF==4 && $1<255 && $2<255 && $3<255 && $4<255) print 0}'` ]
+        then
+		echo "$*"
+		exit 0
+        fi
+}
+
+checking `curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36" -s https://2020.ip138.com/ | grep "<title>" | awk -F"：" '{print $2}' | awk -F"<" '{print $1}'`
+checking `curl -s https://api.myip.la/`
+checking `curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36" -s https://www.ipip.net/ | grep "<span>IP地址</span>" | awk -F">" '{print $5}' | awk -F"<" '{print $1}'`
+checking `curl -s http://myip.ipip.net | awk -F"：" '{print $2}' | awk -F" " '{print $1}'`
+#在此处添加接口，格式如上。
+echo 0
+exit 0
