@@ -40,7 +40,7 @@ value='LocalIP'
 dir=$(cd "$(dirname "$0")"; pwd)
 
 main(){
-LocalIP=`$dir./get_ip`
+LocalIP=`$dir/get_ip`
 if [ "$LocalIP" == "0" ]
 then
         echo -e "获取外网IP异常，所有方案尝试失败，退出。\n}"
