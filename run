@@ -1,5 +1,5 @@
 #!/bin/bash
-#
+#https://github.com/LIU-LIU-LIU/DnsPod_DDNS
 #请将此脚本加入到crontab定时任务中，如果你想一分钟检测一次应该这样写道：
 #命令后面的>>管道是为了生成回显日志
 #*/1 * * * * /bin/bash ./run  >> ./Survice.log
@@ -12,7 +12,7 @@ config=''
 #1为自动检测域名解析，更改到本机外网IP，并邮寄通知。
 #2获取账户下的域名信息，包括域名列表，主机记录列表。
 Domain=''
-#用作检测的域名
+#用作检测的域名,如:www.ahaly.cc
 Sender=''
 #发件方账号名
 Password=''
@@ -21,18 +21,30 @@ smtp=''
 #发件人服务器发件地址
 To=''
 #收件人邮箱地址
+con1(){
+	Theme="你的域名($Domain)解析发生变动，请注意~"
+	#邮件标题
+	Content="当前域名:$Domain <br/>解析结果为:${DomainValue} <br/>当前服务器IP地址为:$LocalIP <br/><hr><p><font color="red">系统检测到不匹配，特发送此邮件通知。</font><br/></p></script><a href="https://console.cloud.tencent.com/domain/mydomain"><font color="blue">点击此处跳转到腾讯云</font></a><br/>"
+	#邮件内容
+}
+con2(){
+	Theme="域名($Domain)解析发生变动，已经帮你更正好了~"
+	#邮件标题
+	Content="当前域名:$Domain <br/>解析结果为:${DomainValue} <br/>当前服务器器IP地址为:$LocalIP <br/><hr><p><font color="red">系统检测到不匹配，已经自动帮你修改好了，请稍后检验。<br/>如果失败请手动点击下面链接，进行更改。</font><br></p></script><a href="https://console.cloud.tencent.com/domain/mydomain"><font color="blue">点击此处跳转到腾讯云</font></a><br/>"
+	#邮件内容
+}
 ##########功能1必填配置:(如果不知道请将config设置为2再运行此文件获取账户信息)
 login_token=''
 #API Token，获取方法https://support.dnspod.cn/Kb/showarticle/tsid/227/
 domain_id=''
 #用作修改记录的域名ID
 record_id=''
-#用作修改记录的记录ID
-sub_domain=''
-#用作修改记录的主机记录, 如 www
-record_type=''
+#用作修改记录的主机记录ID
+sub_domain='www'
+#用作修改记录的主机记录, 如 www,@
+record_type='A'
 #记录类型，大写英文，如：A
-record_line_id=''
+record_line_id='0'
 #线路的ID，如0
 value='LocalIP'
 #记录值, 如 IP:200.200.200.200, CNAME: cname.dnspod.com., MX: mail.dnspod.com。可使用字符LocalIP代替本机外网IP。
@@ -44,15 +56,15 @@ LocalIP=`$dir/get_ip`
 if [ "$LocalIP" == "0" ]
 then
         echo -e "获取外网IP异常，所有方案尝试失败，退出。\n}"
-        exit 0
+        exit 1
 fi
 #获取本机外网IP及判断IP是否合法
-IPAddress=`nslookup $Domain | grep "Address: " | awk 'BEGIN{FS=": "} NR=2{print $2}'`
+DomainValue=`nslookup $Domain | grep "Address: " | awk 'BEGIN{FS=": "} NR=2{print $2}'`
 #获取域名解析结果
-echo -e " Domain=$Domain \n LocalIP=$LocalIP \n IPAddress=$IPAddress"
-if [ "$LocalIP" == "$IPAddress" ];then
+echo -e " Domain=$Domain \n LocalIP=$LocalIP \n DomainValue=${DomainValue}"
+if [ "$LocalIP" == "${DomainValue}" ];then
 	Math=true
-	rm  -f ./Express.txt
+	/bin/rm -f ${dir}/Express.txt
 	echo -e "检测结果匹配，退出程序。\n}"
 	exit 0
 else
@@ -63,9 +75,11 @@ fi
 #主程序结束
 
 send(){
-if [ -f "./Express.txt" ];then
-        echo -e "已经发送过邮件，退出程序。\n}"
-	exit 0
+if [ -f "${dir}/Express.txt" ];then
+        if [ -n `find ${dir} -mtime +7 | grep Express` ];then
+                /bin/rm -f ${dir}/Express.txt
+        fi
+        echo -e "已经发送过邮件，本次不会发送邮件。\n}"
 else
 	if [ -z "$Sender" -o -z "$Password" -o -z "$smtp" -o -z "$To" ]; then
 		echo -e "\033[47;31m 参数\"Sender,Password,smtp,To\"未配置请编辑此文件配置完后,再运行  \033[0m"
@@ -73,7 +87,7 @@ else
 		exit 1
 	else
 		 /usr/local/bin/sendemail -f $Sender -t $To -s $smtp -u $Theme -o message-content-type=html -o message-charset=utf-8 -xu $Sender -xp $Password -m $Content -o tls=no
-	        echo -e "Express=true" > ./Express.txt
+	        echo -e "Express=true" > ${dir}/Express.txt
 	        echo -e "邮件提醒发送完毕 \n"
 	fi
 fi
@@ -81,11 +95,9 @@ fi
 #邮件发送函数结束
 
 config0(){
+main
 if [ $Match ];then
-	Theme="你的域名($Domain)解析发生变动，请注意~"
-	#邮件标题
-	Content="当前域名:$Domain <br/>解析结果为:$IPAddress <br/>当前服务器IP地址为:$LocalIP <br/><hr><p><font color="red">系统检测到不匹配，特发送此邮件通知。</font><br/></p></script><a href="https://console.cloud.tencent.com/domain/mydomain"><font color="blue">点击此处跳转到腾讯云</font></a><br/>"
-	#邮件内容
+	con1
 	send
 	echo -e "}"
 	exit 0
@@ -94,6 +106,7 @@ fi
 #功能0函数结束
 
 config1(){
+main
 if [ -z "$login_token" -o -z "$domain_id" -o -z "$record_id" -o -z "$sub_domain" -o -z "$record_type" -o -z "$record_line_id" -o -z "$value" ]; then
 	echo -e "\033[47;31m 请先编辑此文件配置好后，再运行  \033[0m"
         echo -e "\033[47;31m 配置错误，已经退出 \033[0m \n}"
@@ -101,15 +114,18 @@ if [ -z "$login_token" -o -z "$domain_id" -o -z "$record_id" -o -z "$sub_domain"
 else
 	if [ $Match ];then
 		if [ "$value" == "LocalIP" ]; then value="$LocalIP" ; fi
-		Theme="域名($Domain)解析发生变动，已经帮你更正好了~"
-		#邮件标题
-	        Content="当前域名:$Domain <br/>解析结果为:$IPAddress <br/>当前服务器器IP地址为:$LocalIP <br/><hr><p><font color="red">系统检测到不匹配，已经自动帮你修改好了，请稍后检验。<br/>如果失败请手动点击下面链接，进行更改。</font><br></p></script><a href="https://console.cloud.tencent.com/domain/mydomain"><font color="blue">点击此处跳转到腾讯云</font></a><br/>"
-	        #邮件内容
 	        send
 		curl -X POST https://dnsapi.cn/Record.Modify -d "login_token=$login_token&format=xml&domain_id=$domain_id&record_id=$record_id&sub_domain=$sub_domain&record_type=$record_type&record_line_id=$record_line_id&value=$value"
 		#修改主机记录
-		echo -e "以上如果出现\"Action completed successful\"则表示成功，如出现\"* invalid\"或者\"* failed\"则表示失败，请查看错误并修改相应配置！\n请求API完毕\n}"
-		exit 0
+		if [ $? == 0 ];then
+                        echo -e "\033[36m DNS解析修改完成 \033[0m"
+                        con2
+                        send
+                else
+                        echo -e "\033[31m DNS解析修改失败，本次将不会发送邮件。
+可能原因：该解析记录已经存在，或者主机记录填写错误等。 \033[0m"
+			exit 1
+                fi
 	fi
 fi
 }
@@ -139,7 +155,6 @@ if [ -z "$config" -o -z "$Domain" ]; then
         echo -e "\033[47;31m 配置错误，已经退出 \033[0m \n}"
         exit 1
 else
-        main
         case $config in
         0)      config0
         ;;
