@@ -14,7 +14,7 @@ config=''
 Domain2=''
 #二级域名，请不要加www。如:ahaly.cc
 Domain=''
-#完全合格域名,如www.ahaly.cc
+#需要被检测的域名,如www.ahaly.cc,ahaly.cc,net.ahaly.cc
 Sender=''
 #发件方账号名
 Password=''
