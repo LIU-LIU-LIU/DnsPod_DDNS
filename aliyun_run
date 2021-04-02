@@ -128,6 +128,7 @@ echo -e "\033[47;34m |以上是${Domain}域名下的信息。|\n|请将获取到
 }
 #功能2函数结束
 
+echo ''
 date
 echo -e "{"
 if [ -z "${config}" -o -z "${Domain}" ]; then
