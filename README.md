@@ -29,6 +29,17 @@ http://caspian.dotconf.net/menu/Software/SendEmail/sendEmail-v1.56.tar.gz<br>
 #ln -s `pwd`/sendEmail /usr/local/bin/sendemail
 \\创建软连接
 ```
+
+如果你想一分钟检测一次请将此脚本加入到crontab定时任务中，应该这样写道：
+```shell
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/root/bin
+#上面这些是为了配置crontab的环境变量
+*/1 * * * * /bin/bash ./run  >> ./Survice.log
+```
+> 命令后面的>>管道是为了生成回显日志
+> 注意上方./为相对路径，添加定时任务时请更改为绝对路径!
+
 --- 
 > 2021年1月29日更新:添加aliyun_dns支持
 # aliyun_DDNS
